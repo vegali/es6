@@ -127,3 +127,20 @@ f([1,2,3]);
 function f(x,y,z){...}
 f({z:3,y:2,x:1})
 ```
+- 提取JSON数据
+    解构赋值对提取JSON对象中的数据尤其游泳
+```
+var jsonData = {
+    id : 42,
+    status : 'OK',
+    data : [867,5309]
+};
+
+let {id,status,data:number} = jsonData;
+```
+
+- 函数参数的默认值
+
+- 遍历Map结构
+
+- 输入模块的指定方法
