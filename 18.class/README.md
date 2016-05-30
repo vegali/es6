@@ -1,4 +1,4 @@
-#class
+#lass
 
 ## 1.Class基本语法
 Javascript的传统方法是通过构造函数定义并生成对象。
@@ -63,4 +63,21 @@ class B{}
 let b = new B();
 b.constructor === B.prototype.constructor // true
 ```
-上面的代码中，`b`是`B`类的实例，它的constructor方法就是B类原型的 `constructor` 方法。
+上面的代码中，`b`是`B`类的实例，它的constructor方法就是`B`类原型的 `constructor` 方法。
+
+由于类的方法都定义在 `prototype` 对象上，所以类的新方法都可以定义在 `prototype` 对象上面。 `Object.assign` 方法可以很方便的一次向类添加多个方法。
+```Javascript
+class Point{
+    constructor(){
+        //...
+    }
+}
+Object.assign(Point.prototype,{
+    toSting(){}
+    toValue(){}
+})
+```
+`prototype` 对象的 `constructor` 属性，直接指向“类”的本身，这与ES5的行为是一致的。
+```Javascript
+Point.prototype.constructor === Point; //true
+```
