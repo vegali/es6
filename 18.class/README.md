@@ -1,5 +1,5 @@
 #lass
-
+------------------------------
 ## 1.Class基本语法
 Javascript的传统方法是通过构造函数定义并生成对象。
 ```Javascript
@@ -81,3 +81,44 @@ Object.assign(Point.prototype,{
 ```Javascript
 Point.prototype.constructor === Point; //true
 ```
+另外，类的内部所有定义的方法，都是不可枚举的。
+```Javascript
+class Point{
+    constructor(x,y){
+        //...
+    }
+    toString(){
+        //...
+    }
+}
+Object.keys(Point.prototype); //[] (Object.keys()返回对象自身所有可枚举的属性键名)
+Object.getOwnPropertyNames(Point.prototype); //["constructor","toString"] (Object.getOwnPropertyNames()返回一个数组，包含对象自身的所有属性)
+```
+上面的代码中， ``toString`` 方法是 ``Point`` 类内部定义的方法，它是不可枚举的。这一点与ES5不一致。
+```Javascript
+function Point(x,y){
+    //...
+}
+Point.prototype.toString = function(){
+    //...
+}
+Object.keys(Point.prototype); // ["toString"]
+Object.getOwnPropertyNames(Point.prototype); ["constructor","toString"]
+```
+上面的代码采用ES5的写法，`toString` 方法就是可以枚举的。
+类的属性名，也可以采用表达式。
+```Javascript
+let methodName = "getArea";
+class Square{
+    constructor(length){
+        //...    
+    }
+    [methodName](){
+        //...
+    }
+}
+```
+上面的代码中，Square类的方法名 getArea 就是从表达式中获得的。
+
+------------------------------
+## 2.constructor 方法

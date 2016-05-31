@@ -1,9 +1,22 @@
-function sum(...nums){
-    var su = 0;
-    for (var val of nums){
-        su += val;
+/*
+class Point{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
     }
-    return su;
+    toString(){
+        console.log(this.x + ',' + this.y)
+    }
+    toValue(){
+        console.log(this.x.value);
+    }
 }
 
-sum(1,2,3,4,5,6,7,8,9,10)
+var p = new Point({value:'123'},'abc');*/
+
+function Point(x,y){
+
+}
+Point.prototype.toString = function(){
+
+}
