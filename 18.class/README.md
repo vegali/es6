@@ -577,7 +577,7 @@ _________________________
 ```JavaScript
 class Foo{}
 Foo.prop = 1;
-Foo.prop //`
+Foo.prop // 1
 ```
 上面的写法为 `Foo` 类定义了一个静态属性 `prop`；
 目前只有这种方法可行，因为ES6明确规定，Class内部只有静态方法，没有静态属性。
@@ -633,5 +633,7 @@ function copyProperties(target,source){
 ```
 上面代码的`mix`函数，可以将多个对象合成一个类。使用的时候只要继承这个类即可。
 ```JavaScript
-class DistributedEdit extends mis(Loggable,Serializable){//...}
+class DistributedEdit extends mis(Loggable,Serializable){
+    //...
+}
 ```
