@@ -243,5 +243,203 @@ class Foo{}
 
 ------------------------------
 ### 严格模式
-类和模块的内部，默认就是采用严格模式，所以不需要使用 `use strice` 指定运算模式。只要你的代码写在类或模块之中，就只有严格模式可用。
+类和模块的内部，默认就是采用严格模式，所以不需要使用 `use strict` 指定运算模式。只要你的代码写在类或模块之中，就只有严格模式可用。
 考虑到未来所有的代码，其实都是运行在模块之中，所以ES6实际上把整个语言升级到了严格模式。
+
+______________________________
+## 2.Class的继承
+------------------------------
+### 基本用法
+
+Class之间可以通过 `extends` 关键字实现继承，这比ES5通过修改原型链实现继承要清晰和方便的多。
+```Javascript
+class ColorPoint extends Point{}
+```
+上面的代码定义了一个 `ColorPoint` 类，通过关键字 `extends` 继承了 `Point` 类的所有属性和方法。但是由于没有部署任何代码，所以这两个类完全一样。下面我们在 `ColorPoint` 类里加上代码。
+```Javascript
+class ColorPoint extends Point{
+    constructor(x,y,color){
+        super(x,y); //调用父类的 constructor(x,y)
+        this.color = color;
+    }
+    toString(){
+        return this.color + ' ' + super.toString(); //调用父类的 toString()
+    }
+}
+```
+上面的代码中，`constructor` 方法和 `toString` 方法中，都出现了 `super` 关键字，它在这里标示父类的构造函数，用来新建父类的 `this` 对象。
+子类必须在 `constructor` 中调用 `super` 方法，否则新建的实例会报错。这是因为子类没有自己的 `this` 对象，二是继承父类的 `this` 对象，然后对其加工。如果不调用 `super` 方法，子类就得不到`this`对象。
+```Javascript
+class ColorPoint extends Point{
+    constructor(){
+        //...
+    }
+}
+
+var cp = new ColorPoint();  //referenceError
+```
+子类的构造函数中没有调用 `super` 方法，导致新建实例是报错。
+
+ES5的继承，实质上是先创造了子类的实例对象 `this` 然后再将父类的方法添加到 `this` 上面。ES6的继承机制完全不同，实质上是先创造父类的实例对象 `this` ，所以必须先调用 `super` 方法。然后再用子类的构造函数修改 `this`。
+如果子类没有定义 `constructor` 方法，这个方法被默认添加，
+```Javascript
+constructor(...args){
+    super(...args)
+}
+```
+另一个需要注意的地方，在子类的构造函数中，只有调用了 `super` 之后，才可以使用 `this` 关键字，否则会报错。这是因为子类实例的构建，是基于对父类实例的加工，只有`super`方法才能返回父类实例。
+```Javascript
+class colorPoint extends Point{
+    constructor(x,y,color){
+        this.color = color; //ReferenceError
+        super(x,y);
+        this.color = color; //正确
+    }
+}
+```
+上面的代码中，子类的 `constructor` 方法在没有调用 `super` 之前，就使用 `this` 关键字，结果报错，而放在 `super` 关键字后就是正确的。
+下面是生成子类实例额的代码。
+```javascript
+let co = new ColorPoint(25,8,'green');
+cp instanceof ColorPint // true
+cp instanceof Point // true
+```
+上面的代码中，实例对象 `cp` 同时是 `ColorPoint` 和 'Point' 两个类的实例，这与ES5的行为完全一致。
+
+-----------------------
+### 类的prototype属性和__proto__属性
+大多数浏览器的ES5实现之中，每一个对象都有 `__proto__` 属性，指向对应的构造函数的 `prototype` 属性。 Class 作为构造函数的语法糖，同时有prototype属性和 `__proto__` 属性，因此可以同事存在两条继承链。
+ - 子类的`__proto__`属性，表示构造函数的继承，总是指向父类。
+ - 子类`prototype`属性的`__proto__`属性，表示方法的继承，总是指向父类的`prototype`属性。
+```javascript
+class A{}
+class B extends A {}
+B.__proto__ === A //true
+B.prototype.__proto__ === A.prototype //true
+```
+上面的代码中，子类`B`的`__proto__`的属性指向父类 `A`，子类`B`的`prototype`属性的`__proto__`属性指向父类的`prototype`属性。
+这样的结果是因为，类的继承是按照下面的模式实现的。
+```Javascript
+class A{}
+class B{}
+
+//B的实例继承A的实例
+Object.setPrototypeOf(B.prototype,A.prototype);
+
+//B继承A的静态属性
+Object.setPrototypeOf(B,A)
+```
+《对象的扩展》一章给出过 `Object.setPrototypeOf`方法的实现。
+```Javascript
+Object.setPrototypeOf = function(ob,proto){
+    obj.__proto__ = proto;
+    return obj;
+}
+```
+因此就得到了上面的结果
+```javascript
+Object.setPrototypeOf(B.prototype,A.prototype);
+//等同于
+B.prototype.__proto__ = A.prototype;
+
+Object.setPrototypeOf(B,A);
+//等同于
+B.__proto__ = A
+```
+两条继承两可以这样理解：作为一个对象，子类 （`B`）的原型（`__proto__`属性）是父类（`A`）；作为一个构造函数，子类（`B`）的原型（`prototype`属性）是父类的实例。
+
+-------------------
+### Extends 的继承目标
+`extends` 关键字后面可以跟多种类型的值。
+```javascript
+class B extends A{}
+```
+上面的代码 `A`，只要是一个有 `prototype` 属性的函数，就能被 `B` 继承。由于函数都有`prototype`属性，因此 `A` 可以是任意函数。
+
+下面讨论三种特殊情况。
+第一种，子类继承 Object 类。
+```javascript
+class A extends Object{}
+
+A.__proto__ = Object // true
+A.prototype.__proto__ = Object.prototype
+```
+这种情况下，`A`其实就是构造函数`Object`的赋值，`A`的实例就是`Object`的实例。
+
+第二种特殊情况，不存在任何继承。
+```JavaScript
+class A{}
+A.__proto__ == Function.prototype // true
+A.prototype.__ptoto__ === Object.prototype //true
+```
+这种情况下，A作为一个基类（及不粗在任何继承），就是一个普通函数，所以直接继承`Function.prototype`。但是，A调用后返回一个空对象（即Object实例），所以`A.prototype.__proto__`指向构造函数（`Object`）的`prototype`属性。
+
+第三种情况，子类继承`null`。
+```JavaScript
+class C extends null{}
+A.__proto__ === Function.prototype // true
+A.prototype.__proto__ === undefined // true
+```
+这种情况与第二种情况非常像。`A`也是一个普通函数，所以直接继承了`Function.prototype`。但是，A 调用后返回的独享不继承任何方法，所以它的`__proto__`指向`Function.prototype`,实质上执行了下面的代码。
+```JavaScript
+class C extends null {
+    constructor(){
+        return Object.create(null);
+    }
+}
+```
+
+-------------------
+###Object.getPrototypeOf()
+`Object.getPrototype`方法可以用来从子类上获取父类。
+```JavaScript
+Object.getPrototypeOf(ColorPoint) === Point //true
+```
+因此可以用这个方法判断一个类是否继承了另一个类。
+
+---------------------
+### super 关键字
+`super`这个关键字，有两种用法，含义不同。
+ 1、作为函数调用时（`super(...args)`）；`super`代表父类的构造函数。
+ 2、作为对象调用时（`super.prop`或`super.method()`），`super`代表父类。注意，此时的`super`即可以引用父类实例的属性和方法，也可以引用父类的静态方法。
+```JavaScript
+class B extends A{
+    get m(){
+        return this._p * super._p;
+    }
+    set m(){
+        throw new Error('该属性只读');
+    }
+}
+```
+上面的代码中，子类通过 `super` 关键字，调用父类实例的 `_p` 属性。
+由于，对象总是继承其他对象的，所以可以在任意对象中使用`super`关键字。
+```javascript
+var obj = {
+    toString(){
+        return "MyObject:" + super.toString();
+    }
+};
+
+obj.toString();
+```
+
+-----------------
+### 实例的 __proto__ 属性
+子类实例的 __proto__属性的__proto__属性，指向父类实例的__proto__属性。也就是说，子类原型的原型，就是父类的原型。
+```javascript
+var p1 = new Point(x,y);
+par p2 = new ColorPoint(x,y,'red')
+
+p2.__proto__.__proto__ === p1.__proto__ //true
+```
+因此可用用子类实例的__proto__.__proto__的属性，可以修改父类实例的行为。
+```JavaScript
+p2.__proto__.__proto__.printName = function(){
+    console.log('ha');
+}
+p1.printName(); //'ha'
+```
+
+_______________________
+## 3.原声构造函数的继承
