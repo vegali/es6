@@ -425,15 +425,15 @@ obj.toString();
 ```
 
 -----------------
-### 实例的 __proto__ 属性
-子类实例的 __proto__属性的__proto__属性，指向父类实例的__proto__属性。也就是说，子类原型的原型，就是父类的原型。
+### 实例的 `__proto__` 属性
+子类实例的 `__proto__`属性的`__proto__`属性，指向父类实例的`__proto__`属性。也就是说，子类原型的原型，就是父类的原型。
 ```javascript
 var p1 = new Point(x,y);
 par p2 = new ColorPoint(x,y,'red')
 
 p2.__proto__.__proto__ === p1.__proto__ //true
 ```
-因此可用用子类实例的__proto__.__proto__的属性，可以修改父类实例的行为。
+因此可用用子类实例的`__proto__.__proto__`的属性，可以修改父类实例的行为。
 ```JavaScript
 p2.__proto__.__proto__.printName = function(){
     console.log('ha');
@@ -442,4 +442,196 @@ p1.printName(); //'ha'
 ```
 
 _______________________
-## 3.原声构造函数的继承
+## 3.原生构造函数的继承
+ES6之前，原生构造函数是无法继承的，比如不能自己定义一个`Array`的子类。
+```JavaScript
+function MyArray(){
+    Array.apply(this,arguments);
+}
+MyArray.prototype = Object.create(Array.prototype,{
+        constructor : {
+            value : MyArray
+        }
+    }
+)
+```
+上面的代码定义了一个继承`Array`的`MyArray`类，但是这个类的行为与`Array`完全不一致。
+```javascript
+var colors = new MyArray();
+colors[0] = 'red';
+colors.length // 0
+colors[0] // 'red'
+```
+之所以会发生这种情况，是因为子类无法获得原生构造函数的内部属性，通过 `Array.apply()` 或者分配原型对象都不行。ES5是先新建子类的实例对象 `this`，在讲父类的属性添加到子类上，由于父类的内部属性无啊获取，导致无法继承原生的构造函数。
+ES6孕育继承原生构造函数定义子类，因为ES6是先新建父类的实例对象 `this` ，然后在用子类的构造函数修饰 `this`，是的父类的所有行为都可以继承。
+```JavaScript
+class MyArray extends Array{
+    constructor(...args){
+        super(...args);
+    }
+}
+var colors = new MyArray();
+colors[0] = 'red';
+colors.length; // 1
+colors.length = 0;
+colors[0] //undefined
+```
+这以为着ES6可以自定义原生数据结构的子类，这是ES5无法做到的。
+
+______________________
+## 4.Class的取值函数（getter）和存值函数（setter）
+与ES5一样，在Class内部可以使用 `get` 和 `set` 关键字，对某个属性设置存值函数和取值函数，拦截该属性的存取行为。
+```JavaScript
+class MyClass{
+    constructor(){
+    
+    }
+    get prop(){
+        return 'getter';
+    }
+    set prop(){
+        console.log('setter:' + value)
+    }
+}
+let inst = new MyClass();
+inst.prop = 123;
+inst.prop // 'getter'
+```
+上面的代码中，`prop`属性有对应的存值函数和取值函数，因此赋值和读取行为都被自定义了。
+
+----------------------------
+## 5.Class 的 Generator方法
+如果某个方法前加上 （`*`）,就代表该方法是一个Generator函数。
+```JavaScript
+class Foo {
+  constructor(...args) {
+    this.args = args;
+  }
+  * [Symbol.iterator]() {
+    for (let arg of this.args) {
+      yield arg;
+    }
+  }
+}
+
+for (let x of new Foo('hello', 'world')) {
+  console.log(x);
+}
+// hello
+// world
+```
+上面代码中，Foo类的Symbol.iterator方法前有一个星号，表示该方法是一个Generator函数。Symbol.iterator方法返回一个Foo类的默认遍历器，for...of循环会自动调用这个遍历器。
+
+_____________________
+## 6.Class的静态方法
+类相当于实例的原型，所有在类中定义的方法，都会被实例继承。如果在一个方法前，加上`static`关键字，就表示该方法不会被实例继承，而是直接通过类来调用，这就称为“静态方法”。
+```JavaScript
+class Foo {
+  static classMethod() {
+    return 'hello';
+  }
+}
+
+Foo.classMethod() // 'hello'
+
+var foo = new Foo();
+foo.classMethod()
+// TypeError: undefined is not a function
+```
+上面代码中，`Foo`类的`classMethod`方法前有`static`关键字，表明该方法是一个静态方法，可以直接在`Foo`类上调用（`Foo.classMethod()`），而不是在`Foo`类的实例上调用。如果在实例上调用静态方法，会抛出一个错误，表示不存在该方法。
+
+父类的静态方法，可以被子类继承。
+```JavaScript
+class Foo {
+  static classMethod() {
+    return 'hello';
+  }
+}
+
+class Bar extends Foo {
+}
+
+Bar.classMethod(); // 'hello'
+```
+上面代码中，父类`Foo`有一个静态方法，子类`Bar`可以调用这个方法。
+
+静态方法也是可以从`super`对象上调用的。
+```JavaScript
+class Foo {
+  static classMethod() {
+    return 'hello';
+  }
+}
+
+class Bar extends Foo {
+  static classMethod() {
+    return super.classMethod() + ', too';
+  }
+}
+
+Bar.classMethod(); // "hello , too"
+```
+_________________________
+## 7.Class的静态属性和实例属性
+静态属性指的是Class本身的属性，即`Class.propname`，而不是定义在实例对象（`this`）上的属性。
+```JavaScript
+class Foo{}
+Foo.prop = 1;
+Foo.prop //`
+```
+上面的写法为 `Foo` 类定义了一个静态属性 `prop`；
+目前只有这种方法可行，因为ES6明确规定，Class内部只有静态方法，没有静态属性。
+```javascript
+//以下两种写法都无效
+class Foo{
+    prop : 1 //方法1
+    static prop : 1 //方法2
+}
+Foo.prop //undefined
+```
+
+ES7有静态属性的提案，在这就不说了。
+
+_________________________
+## 8.new.target 属性
+`new` 是从构造函数生成实例的命令，ES6为`new`命令引入了一个`new.target`属性，（在构造函数中）返回`new`命令作用于的那个构造函数。如果构造函数不是通过`new`命令调用，`new.target`会返回`undefined`，因此这个属性可以用来确定构造函数是怎么调用的。
+```JavaScript
+function Person(name){
+    if(new.target !== undefined){
+        this.name = name;
+    }else{
+        throw new Error('必须使用new生成实例')；
+    }
+}
+```
+__________________________
+## 9.Mixin模式的实现
+Mixin模式指的是，将多个类的接口“混入”（mix in）另一个类。
+```JavaScript
+function mix(...mixins){
+    class Mix{}
+    for(let xixin of mixins){
+        copyProperties(Mix,xixin);
+        copyProperties(Mix.prototype,mixin.prototype)
+    }
+    return Mix
+}
+
+function copyProperties(target,source){
+    for(let key of Reflect.ownKeys(source)){
+        if(
+        
+            key !== 'constructor'
+            && key !== 'prototype'
+            && key !== 'name'
+        ){
+            let desc = Object.getOwnPropertyDescriptor(source,key);
+                    Object.defineProperty(target,key,desc);
+        }
+    }
+}
+```
+上面代码的`mix`函数，可以将多个对象合成一个类。使用的时候只要继承这个类即可。
+```JavaScript
+class DistributedEdit extends mis(Loggable,Serializable){//...}
+```
