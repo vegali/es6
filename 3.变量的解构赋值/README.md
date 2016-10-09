@@ -110,7 +110,7 @@ function f(x,y,z){...}
 f({z:3,y:2,x:1})
 ```
 - 提取JSON数据
-    解构赋值对提取JSON对象中的数据尤其游泳
+    解构赋值对提取JSON对象中的数据尤其有用
 ```
 var jsonData = {
     id : 42,

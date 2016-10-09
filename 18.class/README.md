@@ -219,7 +219,7 @@ let Person = new class{
         console.log(this.name);
     }
 }('李四');
-Person.sayName(); // 张三
+Person.sayName(); // 李四
 ```
 上面的代码中，Person是一个立即执行的Class的实例。
 
@@ -300,7 +300,7 @@ class colorPoint extends Point{
 上面的代码中，子类的 `constructor` 方法在没有调用 `super` 之前，就使用 `this` 关键字，结果报错，而放在 `super` 关键字后就是正确的。
 下面是生成子类实例额的代码。
 ```javascript
-let co = new ColorPoint(25,8,'green');
+let cp = new ColorPoint(25,8,'green');
 cp instanceof ColorPint // true
 cp instanceof Point // true
 ```
